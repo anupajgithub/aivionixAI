@@ -1,18 +1,27 @@
 import { useState } from 'react';
 import { Sparkles, FileText, CheckCircle2, Download, Copy } from 'lucide-react';
-import { mockSRSData } from '../../data/mockData';
+import { aiService } from '../../services/aiService';
+import { SRSData } from '../../types';
 
 export function AIPlanner() {
   const [projectInput, setProjectInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [srsData, setSrsData] = useState<SRSData | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    setTimeout(() => {
-      setIsGenerating(false);
+    setError(null);
+    try {
+      const result = await aiService.generateSRS(projectInput);
+      setSrsData(result);
       setShowResults(true);
-    }, 2000);
+    } catch (err: any) {
+      setError(err.message || "Failed to generate SRS");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -55,7 +64,13 @@ export function AIPlanner() {
         </button>
       </div>
 
-      {showResults && (
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl">
+          {error}
+        </div>
+      )}
+
+      {showResults && srsData && (
         <div className="space-y-6 animate-fadeIn">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -77,14 +92,14 @@ export function AIPlanner() {
           <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-8 space-y-6">
             <div>
               <h3 className="text-xl font-bold text-cyan-400 mb-3">Project Overview</h3>
-              <h4 className="text-2xl font-bold text-white mb-2">{mockSRSData.projectName}</h4>
-              <p className="text-slate-300 leading-relaxed">{mockSRSData.description}</p>
+              <h4 className="text-2xl font-bold text-white mb-2">{srsData.projectName}</h4>
+              <p className="text-slate-300 leading-relaxed">{srsData.description}</p>
             </div>
 
             <div>
               <h3 className="text-xl font-bold text-cyan-400 mb-4">Functional Requirements</h3>
               <div className="space-y-3">
-                {mockSRSData.functionalRequirements.map((req, index) => (
+                {srsData.functionalRequirements.map((req: string, index: number) => (
                   <div key={index} className="flex items-start gap-3 bg-slate-700/30 rounded-lg p-4">
                     <CheckCircle2 className="text-emerald-400 flex-shrink-0 mt-0.5" size={20} />
                     <span className="text-slate-300">{req}</span>
@@ -96,7 +111,7 @@ export function AIPlanner() {
             <div>
               <h3 className="text-xl font-bold text-cyan-400 mb-4">Non-Functional Requirements</h3>
               <div className="space-y-3">
-                {mockSRSData.nonFunctionalRequirements.map((req, index) => (
+                {srsData.nonFunctionalRequirements.map((req: string, index: number) => (
                   <div key={index} className="flex items-start gap-3 bg-slate-700/30 rounded-lg p-4">
                     <CheckCircle2 className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
                     <span className="text-slate-300">{req}</span>
@@ -108,13 +123,13 @@ export function AIPlanner() {
             <div>
               <h3 className="text-xl font-bold text-cyan-400 mb-3">System Architecture</h3>
               <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-6">
-                <p className="text-slate-300 leading-relaxed">{mockSRSData.systemArchitecture}</p>
+                <p className="text-slate-300 leading-relaxed">{srsData.systemArchitecture}</p>
               </div>
             </div>
 
             <div className="pt-4 border-t border-slate-700">
               <p className="text-slate-500 text-sm">
-                Generated on {new Date(mockSRSData.createdAt).toLocaleDateString('en-US', {
+                Generated on {new Date(srsData.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',

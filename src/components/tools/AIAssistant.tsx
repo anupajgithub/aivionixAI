@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MessageSquare, Send, Sparkles, Code, FileText, Zap } from 'lucide-react';
 import { mockChatMessages } from '../../data/mockData';
+import { aiService } from '../../services/aiService';
 
 interface Message {
   id: string;
@@ -14,7 +15,7 @@ export function AIAssistant() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  const handleSend = () => {
+    const handleSend = async () => {
     if (!input.trim()) return;
 
     const newMessage: Message = {
@@ -24,21 +25,32 @@ export function AIAssistant() {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages([...messages, newMessage]);
+    const newMessages = [...messages, newMessage];
+    setMessages(newMessages);
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
+    try {
+      const responseText = await aiService.chat(newMessages, input);
       const response: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content:
-          "I'd be happy to help with that! Let me analyze your request and provide a comprehensive solution. Would you like me to generate code examples or explain the concept in detail?",
+        content: responseText,
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, response]);
+    } catch (err) {
+      console.error(err);
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "Sorry, I encountered an error. Please check your API key and try again.",
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const quickActions = [

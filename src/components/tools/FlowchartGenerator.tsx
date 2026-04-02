@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 import { GitBranch, Download, Copy, RefreshCw } from 'lucide-react';
-import { mockFlowchartCode } from '../../data/mockData';
+import { aiService } from '../../services/aiService';
 
 export function FlowchartGenerator() {
   const [description, setDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [mermaidCode, setMermaidCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // ... load mermaid ...
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
     script.async = true;
     script.onload = () => {
-      if (window.mermaid) {
-        window.mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+      if ((window as any).mermaid) {
+        (window as any).mermaid.initialize({ startOnLoad: true, theme: 'dark' });
       }
     };
     document.body.appendChild(script);
@@ -24,17 +26,28 @@ export function FlowchartGenerator() {
   }, []);
 
   useEffect(() => {
-    if (mermaidCode && window.mermaid) {
-      window.mermaid.run();
+    if (mermaidCode && (window as any).mermaid) {
+      setTimeout(() => {
+        try {
+          (window as any).mermaid.run();
+        } catch (e) {
+          console.error("Mermaid error:", e);
+        }
+      }, 100);
     }
   }, [mermaidCode]);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    setTimeout(() => {
-      setMermaidCode(mockFlowchartCode);
+    setError(null);
+    try {
+      const result = await aiService.generateFlowchart(description);
+      setMermaidCode(result);
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate flowchart');
+    } finally {
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -76,6 +89,12 @@ export function FlowchartGenerator() {
           )}
         </button>
       </div>
+
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl">
+          {error}
+        </div>
+      )}
 
       {mermaidCode && (
         <div className="space-y-6 animate-fadeIn">

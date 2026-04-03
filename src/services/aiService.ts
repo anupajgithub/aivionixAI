@@ -55,17 +55,25 @@ export const aiService = {
       You are an expert systems designer. Generate a Mermaid.js flowchart based on the following request:
       "${prompt}"
       
-      Output ONLY valid Mermaid.js graph TD or graph TB syntax. Do NOT wrap it in markdown code blocks. Start your response with "graph " or "flowchart ".
+      CRITICAL INSTRUCTIONS:
+      1. Output ONLY valid Mermaid.js syntax.
+      2. Start with "graph TD" or "graph LR".
+      3. Escape special characters. If a node label contains parentheses, brackets, or punctuation, you MUST enclose the label in double quotes. Example: A["Login (User)"] --> B["Success!"]
+      4. Return ONLY the mermaid code, without any extra explanation or text.
     `;
     
     const result = await model.generateContent(fullPrompt);
     let text = result.response.text().trim();
-    if (text.startsWith('\`\`\`mermaid')) {
-       text = text.replace(/^\`\`\`mermaid\s*/, '').replace(/\`\`\`$/, '').trim();
+    
+    // Extract code block if wrapped in markdown
+    const codeBlockMatch = text.match(/```(?:mermaid)?\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+      text = codeBlockMatch[1];
     }
-    if (text.startsWith('\`\`\`')) {
-       text = text.replace(/^\`\`\`\w*\s*/, '').replace(/\`\`\`$/, '').trim();
-    }
+    
+    // Fallback cleanup
+    text = text.replace(/^```mermaid\s*/i, '').replace(/^```\w*\s*/, '').replace(/```$/, '').trim();
+    
     return text;
   },
 

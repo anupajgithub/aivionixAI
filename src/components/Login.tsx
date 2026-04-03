@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Mail, Lock, ArrowRight, Sparkles, AlertCircle, ScanFace, QrCode } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Sparkles, AlertCircle, ScanFace, QrCode, ArrowLeft } from 'lucide-react';
 import { DotLottiePlayer } from '@dotlottie/react-player';
+import { FaceScanner } from './FaceScanner';
 
 interface LoginProps {
   onLoginSuccess: () => void;
@@ -11,15 +12,20 @@ export function Login({ onLoginSuccess }: LoginProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [scanMode, setScanMode] = useState<'none' | 'qr' | 'face'>('none');
 
-  // Fake auth handler for QR / Face ID to show success animation
-  const handleAlternativeLogin = () => {
+  const handleScannerSuccess = () => {
+    setScanMode('none');
     setError(false);
     setIsSuccess(true);
     setTimeout(() => {
       onLoginSuccess();
     }, 800);
-  }
+  };
+
+  const handleAlternativeLogin = (mode: 'qr' | 'face') => {
+    setScanMode(mode);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +81,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
             </div>
           </div>
 
-          <div className="relative z-10 flex items-center gap-4 bg-slate-950/40 p-4 rounded-2xl border border-slate-700/50 hover:border-violet-500/30 transition-all cursor-pointer group/qr" onClick={handleAlternativeLogin}>
+          <div className="relative z-10 flex items-center gap-4 bg-slate-950/40 p-4 rounded-2xl border border-slate-700/50 hover:border-violet-500/30 transition-all cursor-pointer group/qr" onClick={() => handleAlternativeLogin('qr')}>
             <div className="p-3 bg-white rounded-xl shadow-lg relative overflow-hidden">
              
               <QrCode className="text-slate-900" size={32} />
@@ -92,11 +98,42 @@ export function Login({ onLoginSuccess }: LoginProps) {
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-violet-600/20 rounded-full blur-[60px] group-hover:bg-violet-500/30 transition-colors duration-700"></div>
         </div>
 
-        {/* Right Column: Traditional Form */}
+        {/* Right Column: Traditional Form or Scan Mode */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center relative">
           
-          <div className="flex flex-col items-center mb-10">
-            <div className="w-16 h-16 bg-gradient-to-tr from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30 mb-6 relative overflow-hidden group">
+          {scanMode !== 'none' ? (
+            scanMode === 'face' ? (
+              <FaceScanner 
+                onSuccess={handleScannerSuccess} 
+                onCancel={() => setScanMode('none')} 
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center animate-fadeIn py-12">
+                <div className="w-32 h-32 relative mb-8">
+                  <QrCode size={128} className="text-violet-500/30" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-500/60 to-transparent animate-scanline"></div>
+                </div>
+                
+                <h3 className="text-2xl font-bold text-white mb-3">
+                  Scanning QR Code...
+                </h3>
+                <p className="text-slate-400 text-sm mb-10 max-w-[250px]">
+                  Please align the QR code from your mobile device within the frame.
+                </p>
+
+                <button
+                  onClick={() => setScanMode('none')}
+                  className="flex items-center gap-2 px-6 py-3 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 text-slate-300 rounded-xl transition-all duration-300"
+                >
+                  <ArrowLeft size={18} />
+                  Back to Login Form
+                </button>
+              </div>
+            )
+          ) : (
+            <>
+              <div className="flex flex-col items-center mb-10">
+                <div className="w-16 h-16 bg-gradient-to-tr from-violet-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30 mb-6 relative overflow-hidden group">
               <Sparkles className="text-white relative z-10 duration-500 group-hover:rotate-12 group-hover:scale-110" size={32} />
               <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </div>
@@ -172,7 +209,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
 
             <button
               type="button"
-              onClick={handleAlternativeLogin}
+              onClick={() => handleAlternativeLogin('face')}
               className="w-full group relative flex justify-center items-center gap-3 py-3.5 px-4 border border-slate-600 bg-slate-800/50 hover:bg-slate-700 hover:border-emerald-500/50 rounded-xl text-white font-medium transition-all duration-300 overflow-hidden"
             >
               <div className="relative w-6 h-6 flex items-center justify-center text-emerald-400">
@@ -183,6 +220,8 @@ export function Login({ onLoginSuccess }: LoginProps) {
             </button>
             
           </form>
+            </>
+          )}
         </div>
       </div>
     </div>

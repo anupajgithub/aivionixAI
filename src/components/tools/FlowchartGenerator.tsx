@@ -26,15 +26,24 @@ export function FlowchartGenerator() {
   }, []);
 
   useEffect(() => {
-    if (mermaidCode && (window as any).mermaid) {
-      setTimeout(() => {
+    const renderChart = async () => {
+      if (mermaidCode && (window as any).mermaid) {
         try {
-          (window as any).mermaid.run();
+          const container = document.getElementById('mermaid-container');
+          if (container) {
+            container.innerHTML = '';
+            const id = `mermaid-svg-${Date.now()}`;
+            const { svg } = await (window as any).mermaid.render(id, mermaidCode);
+            container.innerHTML = svg;
+          }
         } catch (e) {
           console.error("Mermaid error:", e);
         }
-      }, 100);
-    }
+      }
+    };
+    
+    // Add a small delay to ensure the container is mounted
+    setTimeout(renderChart, 100);
   }, [mermaidCode]);
 
   const handleGenerate = async () => {
@@ -117,8 +126,8 @@ export function FlowchartGenerator() {
           </div>
 
           <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-8">
-            <div className="bg-white rounded-xl p-8 overflow-x-auto">
-              <pre className="mermaid">{mermaidCode}</pre>
+            <div className="bg-white rounded-xl p-8 overflow-x-auto min-h-[300px] flex items-center justify-center">
+              <div id="mermaid-container" className="w-full h-full flex justify-center"></div>
             </div>
           </div>
 
